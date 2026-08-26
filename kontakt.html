@@ -101,7 +101,13 @@
 
         <!-- RIGHT: Contact Form -->
         <div class="contact-form">
-          <form id="contactForm" onsubmit="handleSubmit(event)">
+          <form id="contactForm" action="https://api.web3forms.com/submit" method="POST" onsubmit="handleSubmit(event)">
+            <!-- Web3Forms: Zugangsschluessel auf https://web3forms.com anfordern und hier einsetzen -->
+            <input type="hidden" name="access_key" value="REPLACE_WITH_WEB3FORMS_ACCESS_KEY">
+            <input type="hidden" name="subject" value="Neue Anfrage ueber toniplattenleger.ch">
+            <input type="hidden" name="from_name" value="Website Toni Plattenleger">
+            <!-- Spam-Honeypot: fuer Menschen unsichtbar, Bots fuellen es aus -->
+            <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none !important;">
             <div class="form-row">
               <div class="form-group">
                 <input type="text" id="name" name="name" placeholder="Name *" required>
@@ -115,11 +121,11 @@
                 <input type="tel" id="phone" name="phone" placeholder="Telefon">
               </div>
               <div class="form-group">
-                <select id="subject" name="subject" required>
+                <select id="subject" name="betreff" required>
                   <option value="">Betreff wählen *</option>
-                  <option value="offerte">Offerte</option>
-                  <option value="anfrage">Allgemeine Anfrage</option>
-                  <option value="bewerbung">Bewerbung</option>
+                  <option value="Offerte">Offerte</option>
+                  <option value="Allgemeine Anfrage">Allgemeine Anfrage</option>
+                  <option value="Bewerbung">Bewerbung</option>
                 </select>
               </div>
             </div>
@@ -132,6 +138,11 @@
           </form>
           <div id="successMessage" style="display:none; margin-top:16px; padding:16px; background:rgba(200,16,46,0.08); border-radius:8px; color:var(--red); font-weight:600; font-size:0.9rem;">
             Vielen Dank! Wir melden uns innerhalb von 24 Stunden.
+          </div>
+          <div id="errorMessage" role="alert" style="display:none; margin-top:16px; padding:16px; background:var(--grey-bg); border-left:3px solid var(--red); border-radius:8px; color:var(--grey-dark); font-weight:500; font-size:0.9rem; line-height:1.5;">
+            Die Nachricht konnte nicht gesendet werden. Bitte rufen Sie uns an unter
+            <a href="tel:+41762184209" style="color:var(--red); font-weight:600;">076 218 42 09</a> oder schreiben Sie an
+            <a href="mailto:Info@toni-plattenleger.ch" style="color:var(--red); font-weight:600;">Info@toni-plattenleger.ch</a>.
           </div>
         </div>
 
@@ -193,10 +204,34 @@
   </footer>
 
   <script>
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
       e.preventDefault();
-      document.getElementById('contactForm').style.display = 'none';
-      document.getElementById('successMessage').style.display = 'block';
+      var form  = document.getElementById('contactForm');
+      var btn   = form.querySelector('button[type="submit"]');
+      var error = document.getElementById('errorMessage');
+      var label = btn.innerHTML;
+
+      error.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Wird gesendet …';
+
+      try {
+        var res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(Object.fromEntries(new FormData(form)))
+        });
+        var data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message || 'Request failed');
+
+        form.style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+      } catch (err) {
+        console.error('[kontakt] Versand fehlgeschlagen:', err);
+        error.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = label;
+      }
     }
     window.addEventListener('scroll', function() {
       const navbar = document.querySelector('.navbar');
