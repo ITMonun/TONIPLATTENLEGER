@@ -1,0 +1,9 @@
+# config.php enthaelt das SMTP-Passwort und darf nie ausgeliefert werden.
+<FilesMatch "^config.*\.php$">
+    Require all denied
+</FilesMatch>
+
+# Beispieldatei ebenfalls nicht ausliefern.
+<FilesMatch "\.(example|md|log|txt)$">
+    Require all denied
+</FilesMatch>

@@ -101,13 +101,12 @@
 
         <!-- RIGHT: Contact Form -->
         <div class="contact-form">
-          <form id="contactForm" action="https://api.web3forms.com/submit" method="POST" onsubmit="handleSubmit(event)">
-            <!-- Web3Forms: Zugangsschluessel auf https://web3forms.com anfordern und hier einsetzen -->
-            <input type="hidden" name="access_key" value="REPLACE_WITH_WEB3FORMS_ACCESS_KEY">
-            <input type="hidden" name="subject" value="Neue Anfrage ueber toniplattenleger.ch">
-            <input type="hidden" name="from_name" value="Website Toni Plattenleger">
-            <!-- Spam-Honeypot: fuer Menschen unsichtbar, Bots fuellen es aus -->
-            <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none !important;">
+          <form id="contactForm" action="https://toniplattenleger.ch/api/send.php" method="POST" onsubmit="handleSubmit(event)">
+            <!-- Spam-Honeypot: fuer Menschen unsichtbar, Bots fuellen ihn aus -->
+            <input type="text" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true"
+                   style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0;">
+            <!-- Zeitstempel fuer die Zeitfalle, wird beim Laden per JS gesetzt -->
+            <input type="hidden" name="ts" id="formTs" value="">
             <div class="form-row">
               <div class="form-group">
                 <input type="text" id="name" name="name" placeholder="Name *" required>
@@ -140,7 +139,7 @@
             Vielen Dank! Wir melden uns innerhalb von 24 Stunden.
           </div>
           <div id="errorMessage" role="alert" style="display:none; margin-top:16px; padding:16px; background:var(--grey-bg); border-left:3px solid var(--red); border-radius:8px; color:var(--grey-dark); font-weight:500; font-size:0.9rem; line-height:1.5;">
-            Die Nachricht konnte nicht gesendet werden. Bitte rufen Sie uns an unter
+            <span id="errorText">Die Nachricht konnte nicht gesendet werden.</span> Bitte rufen Sie uns an unter
             <a href="tel:+41762184209" style="color:var(--red); font-weight:600;">076 218 42 09</a> oder schreiben Sie an
             <a href="mailto:info@toniplattenleger.ch" style="color:var(--red); font-weight:600;">info@toniplattenleger.ch</a>.
           </div>
@@ -204,6 +203,18 @@
   </footer>
 
   <script>
+    // Absolut, damit das Formular auch von GitHub Pages aus auf dem
+    // Hoststar-Server ankommt; lokal relativ zum Testserver.
+    var ENDPOINT = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? '/api/send.php'
+      : 'https://toniplattenleger.ch/api/send.php';
+
+    // Zeitstempel setzen — zu schnelles Absenden entlarvt Bots.
+    document.addEventListener('DOMContentLoaded', function () {
+      var ts = document.getElementById('formTs');
+      if (ts) { ts.value = String(Date.now()); }
+    });
+
     async function handleSubmit(e) {
       e.preventDefault();
       var form  = document.getElementById('contactForm');
@@ -216,18 +227,22 @@
       btn.textContent = 'Wird gesendet …';
 
       try {
-        var res = await fetch('https://api.web3forms.com/submit', {
+        var res = await fetch(ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify(Object.fromEntries(new FormData(form)))
         });
-        var data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.message || 'Request failed');
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Request failed');
+        }
 
         form.style.display = 'none';
         document.getElementById('successMessage').style.display = 'block';
       } catch (err) {
         console.error('[kontakt] Versand fehlgeschlagen:', err);
+        document.getElementById('errorText').textContent =
+          (err && err.message) ? err.message : 'Die Nachricht konnte nicht gesendet werden.';
         error.style.display = 'block';
         btn.disabled = false;
         btn.innerHTML = label;
