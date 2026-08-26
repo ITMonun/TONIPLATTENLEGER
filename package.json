@@ -1,0 +1,10 @@
+{
+  "name": "toniplattenleger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Website Toni Plattenleger GmbH — statische Seite mit Kontaktformular-Function",
+  "type": "module",
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  }
+}

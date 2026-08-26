@@ -101,7 +101,7 @@
 
         <!-- RIGHT: Contact Form -->
         <div class="contact-form">
-          <form id="contactForm" action="https://toniplattenleger.ch/api/send.php" method="POST" onsubmit="handleSubmit(event)">
+          <form id="contactForm" action="/api/send" method="POST" onsubmit="handleSubmit(event)">
             <!-- Spam-Honeypot: fuer Menschen unsichtbar, Bots fuellen ihn aus -->
             <input type="text" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true"
                    style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0;">
@@ -203,11 +203,9 @@
   </footer>
 
   <script>
-    // Absolut, damit das Formular auch von GitHub Pages aus auf dem
-    // Hoststar-Server ankommt; lokal relativ zum Testserver.
-    var ENDPOINT = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? '/api/send.php'
-      : 'https://toniplattenleger.ch/api/send.php';
+    // Gleiche Herkunft: Seite und Function liegen zusammen auf Vercel.
+    // Relativ, damit es auch auf Preview-Deployments funktioniert.
+    var ENDPOINT = '/api/send';
 
     // Zeitstempel setzen — zu schnelles Absenden entlarvt Bots.
     document.addEventListener('DOMContentLoaded', function () {

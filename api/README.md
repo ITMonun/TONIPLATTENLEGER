@@ -1,38 +1,45 @@
-# Kontaktformular — Backend
+# Kontaktformular — Vercel Function
 
-Das Formular auf `kontakt.html` schickt seine Daten an `api/send.php`.
-Das Skript stellt die Anfrage per authentifiziertem SMTP an
-`info@toniplattenleger.ch` zu.
+Das Formular auf `kontakt.html` sendet an `/api/send`. Die Function stellt die
+Anfrage per authentifiziertem SMTP bei Hoststar an `info@toniplattenleger.ch` zu.
 
-## Einrichtung auf dem Hoststar-Server
+## Einrichtung
 
-1. **Dateien hochladen** — den gesamten Ordner `api/` in das Web-Root laden
-   (per FTP/SFTP oder im Hoststar-Dateimanager).
+Es muss genau **eine** Umgebungsvariable gesetzt werden — das Passwort der
+Mailbox. Alles andere hat sinnvolle Voreinstellungen.
 
-2. **Konfiguration anlegen.** `api/config.example.php` kopieren und das
-   Passwort der Mailbox eintragen. Das Skript sucht die Datei in dieser
-   Reihenfolge:
+Im Vercel-Dashboard: **Settings → Environment Variables**
 
-   | Ort | Empfehlung |
-   |---|---|
-   | `../../tpl-mail-config.php` (ueber dem Web-Root) | **bevorzugt** — per HTTP nicht erreichbar |
-   | `../tpl-mail-config.php` | gut |
-   | `api/config.php` | funktioniert, aber im Web-Root |
+| Name | Wert | Umgebungen |
+|---|---|---|
+| `SMTP_PASSWORD` | Passwort von `info@toniplattenleger.ch` | Production, Preview, Development |
 
-   Hoststar liefert ueber nginx aus, dort greift `.htaccess` nicht. Deshalb
-   die Datei moeglichst ueber das Web-Root legen.
+Oder per CLI:
 
-3. **Testen** — Formular auf der Website abschicken. Kommt keine Mail an,
-   in `api/config.php` kurzzeitig `'debug' => true` setzen; die JSON-Antwort
-   nennt dann den fehlgeschlagenen SMTP-Schritt. Danach wieder auf `false`.
-   Zugangsdaten erscheinen dabei nie in der Ausgabe.
+```bash
+vercel env add SMTP_PASSWORD production
+```
+
+Danach **neu deployen** — Umgebungsvariablen greifen erst im naechsten Build.
+
+### Optionale Variablen
+
+Nur setzen, wenn vom Standard abgewichen werden soll:
+
+| Name | Standard |
+|---|---|
+| `SMTP_HOST` | `lx69.hoststar.hosting` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | `info@toniplattenleger.ch` |
+| `MAIL_TO` | `info@toniplattenleger.ch` |
 
 ## Wichtig
 
-* `config.php` steht in `.gitignore` und darf **nie** committet werden.
-* Absender ist immer `info@toniplattenleger.ch` (die authentifizierte
-  Mailbox), sonst scheitern SPF/DMARC. Die Adresse des Besuchers steht im
-  `Reply-To`, ein Klick auf "Antworten" geht also direkt an den Kunden.
+* Das Passwort steht **nur** in den Vercel-Umgebungsvariablen — nie im Code,
+  nie in Git, nie im Frontend.
+* Absender ist immer `info@toniplattenleger.ch` (die authentifizierte Mailbox),
+  sonst scheitern SPF/DMARC. Die Adresse des Besuchers steht im `Reply-To`,
+  ein Klick auf "Antworten" geht also direkt an den Kunden.
 
 ## Spamschutz
 
@@ -40,14 +47,13 @@ Das Skript stellt die Anfrage per authentifiziertem SMTP an
 |---|---|
 | Honeypot `botcheck` | unsichtbares Feld; ausgefuellt = Bot, wird still verworfen |
 | Zeitfalle `ts` | Absenden unter 3 Sekunden oder nach ueber 2 Stunden wird abgelehnt |
-| Rate-Limit | max. 5 Absendungen pro IP und Stunde |
-| Origin-Pruefung | nur die Domains aus `allowed_origins` duerfen senden |
+| Rate-Limit | max. 5 pro IP und Stunde (best effort — Instanzen werden geteilt, aber nicht garantiert) |
+| Origin-Pruefung | gleiche Herkunft immer erlaubt, fremde nur aus `allowedOrigins` |
 | Laengenlimits | Name 120, E-Mail 180, Nachricht 5000 Zeichen |
 | CR/LF-Filter | verhindert Header-Injection |
 
-## Wenn die Website auf GitHub Pages bleibt
+## Fehlersuche
 
-Dann laufen Formular und Endpunkt auf verschiedenen Domains. `allowed_origins`
-in der Konfiguration muss die Pages-Domain enthalten (ist voreingestellt).
-Liegt die Website dagegen selbst auf Hoststar, ist alles gleiche Herkunft und
-die Liste wird gar nicht gebraucht.
+Kommt keine Mail an: **Vercel Dashboard → Deployments → Functions → Logs**.
+Die Function protokolliert `[kontakt] SMTP fehlgeschlagen: …` mit dem Grund.
+Zugangsdaten erscheinen dabei nie.
